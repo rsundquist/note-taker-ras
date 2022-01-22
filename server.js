@@ -6,7 +6,7 @@ const fs = require('fs')
 
 const app = express()
 
-var PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 3001
 
 // middleware
 app.use(express.urlencoded({extened: true}))
