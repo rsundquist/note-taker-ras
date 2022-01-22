@@ -1,56 +1,68 @@
-const express = require('express')
-const path = require('path')
-const notes = require('./db/db.json')
+const express = require('express');
+const path = require('path');
 const fs = require('fs')
+const uuid = require('uuid');
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use(express.static('public'));
+
+app.get("/",(req,res)=> {
+        res.sendFile(path.join(dirname,"/public/index.html"));
+    })
+
+app.get("/notes",(req,res)=> {
+        res.sendFile(path.join(dirname,"/public/notes.html"));
+    })
 
 
-const app = express()
-
-const PORT = process.env.PORT || 3001
-
-// middleware
-app.use(express.urlencoded({extened: true}))
-app.use(express.json);
-app.use(express.static("public"))
-
-
-app.get("/api/notes", (req, res) => {
-    res.sendFile(path.join(__dirname, "/db/db.json"))
+app.get("/api/notes",(req,res)=> {
+    fs.readFile('./db/db.json',(err,data) => {
+        if(err) throw err; 
+        res.send(JSON.parse(data))
+    })
 })
 
-app.get('/api/notes', (req, res) => res.status(200).json(notes))
+app.post("/api/notes",(req,res) => {
+     req.body.id = uuid.v4();
+     const note = req.body;
+     fs.readFile('./db/db.json','utf8',(err,data) =>{
+         if (err) throw err;
+         const obj = JSON.parse(data);
+         obj.push(note);
+         fs.writeFile('./db/db.json',JSON.stringify(obj),(err,data) => {
+             if (err) throw err;
+             fs.readFile('./db/db.json',(err,data) => {
+                 if (err) throw err;
+                res.send(JSON.parse(data))
+             })
+         })
+     })
 
-app.get('/notes', (req, res) =>
-  res.sendFile(path.join(__dirname, '/public/notes.html'))
-)
+    })
 
-app.get('/', (req, res) =>
-  res.sendFile(path.join(__dirname, '/public/index.html'))
-)
+    app.delete('/api/notes/:id', (req, res) => {
+        fs.readFile('./db/db.json', 'utf8', (err, data) => {
+            if (err) throw err;
+            const obj = JSON.parse(data);
+            obj.forEach(element => {
+                if (element.id === req.params.id) {
+                    obj.splice(obj.indexOf(element));
+                }
+            });
+            fs.writeFile('./db/db.json', JSON.stringify(obj), (err, data) => {
+                if (err) throw err;
+                    if (err) throw err;
+                    res.status(200).json(Note deleted); 
+            } );
+        });
+    });
 
 
-//api routes
 
-app.post("/api/notes", (req, res) => {
-  var newNote = req.body;
-  newNote["id"] = currentID +1
-  currentID++;
-  console.log(newNote)
-  notes.push(newNote)
-  newNotes();
-  return res.status(200).end()
-})
-
-function newNotes() {
-  fs.writeFile("db/db.json", JSON.stringify(notes), function (err) {
-      if (err) {
-          console.log("error")
-          return console.log(err)
-      }
-      console.log("Success!")
-  })
-}
-
-app.listen(PORT, () => {
-  console.log(`App listening at http://localhost:${PORT}`)
-})
+app.listen(PORT, () =>
+  console.log(Example app listening at http://localhost:${PORT})
+);
